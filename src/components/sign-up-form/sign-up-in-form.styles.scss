@@ -1,0 +1,44 @@
+// Remove input arrows 
+input[type=number] {
+  -moz-appearance: textfield;
+}
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.sign-up-container, .sign-in-container {
+	display: grid;
+	place-content: center;
+	min-height: 100vh;
+	padding: 0 1.2rem;
+	.pass-logo {
+		display: block;
+		margin: auto;
+		width: 200px;
+	}
+	h2 {
+		letter-spacing: 0;
+		margin-bottom: 1rem;
+		font-size: 32px;	
+		color: #282828;
+	}
+	span {
+		display: inline-block;
+		font-size: 14px;
+		letter-spacing: 0;
+		color: #777;
+		margin-top: 1rem;
+		font-weight: bold;
+	}
+	.sign-link {
+		font-size: 14px;
+		padding: 0 10px;
+	}
+}
+
+#recaptcha-container {
+	margin-top: 2rem;
+	min-height: 5rem;
+}
