@@ -1,9 +1,5 @@
 import { useState } from "react";
-import {
-	signInUserFromEmailFromAuth,
-	signInWithGooglePopup,
-	createUserFromAuth,
-} from "../../utils/firebase/firebase.utils";
+import { signInUserFromEmailFromAuth } from "../../utils/firebase/firebase.utils";
 
 import FormInput from "../form-input/form-input.component";
 import Button from "../button/button.component";
@@ -15,12 +11,8 @@ const defaultFormFields = {
 };
 
 const SignInForm = () => {
-	const signInWithGoogle = async () => {
-		const response = await signInWithGooglePopup();
-		await createUserFromAuth(response.user);
-	};
-
 	const [formFields, setFormFields] = useState(defaultFormFields);
+	const [buttonDisabled, setButtonDisabled] = useState(false);
 	const { email, password } = formFields;
 
 	const resetFormFields = () => {
@@ -38,23 +30,24 @@ const SignInForm = () => {
 
 	const handleSubmit = async (e) => {
 		e.preventDefault();
+		setButtonDisabled(true);
 		try {
-			// returns response => userCred
+			// returns response => userCred {user}
 			await signInUserFromEmailFromAuth(email, password);
 			resetFormFields();
-
 		} catch (err) {
 			switch (err.code) {
 				case "auth/wrong-password":
 					alert("Incorrect Password for the Email");
 					break;
 				case "auth/user-not-found":
-					alert("no user with email exists")
+					alert("No user with email exists");
 					break;
-				default: 
-					console.log(err);
+				default:
+					alert("Error in sign-in user: " + err.code);
 			}
 		}
+		setButtonDisabled(false);
 	};
 
 	return (
@@ -62,15 +55,14 @@ const SignInForm = () => {
 			<h2>Sign in using Mobile no.</h2>
 			<form onSubmit={handleSubmit}>
 				<FormInput
-					label="Mobile No."
+					label="Enter Registered Email"
 					inputOptions={{
 						onChange: handleChange,
 						name: "email",
 						value: email,
 						required: true,
 						type: "email",
-						autoComplete: "off",
-						placeholder: "Enter your Mobile no.",
+						placeholder: "example@gmail.com",
 					}}
 				/>
 				<FormInput
@@ -84,11 +76,7 @@ const SignInForm = () => {
 						placeholder: "Enter Password",
 					}}
 				/>
-				<Button
-					children= "Sign in"
-					buttonType="button-primary"
-					type="button"
-				/>
+				<Button children="Sign in" buttonType="button-primary" type="submit" disabled={buttonDisabled} />
 				<div>
 					<span>Don't have an account ?</span>
 					<Link className="sign-link" to="/">

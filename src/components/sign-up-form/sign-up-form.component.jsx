@@ -7,19 +7,16 @@ import Button from "../button/button.component";
 import { Link } from "react-router-dom";
 import "./sign-up-in-form.styles.scss";
 
-const API = "https://api.data.gov.in/resource/44bea382-c525-4740-8a07-04bd20a99b52?api-key=579b464db66ec23bdd000001cdd3946e44ce4aad7209ff7b23ac571b&format=json&filters%5Bdistrict_name%5D=";
+const API =
+	"https://api.data.gov.in/resource/44bea382-c525-4740-8a07-04bd20a99b52?api-key=579b464db66ec23bdd000001cdd3946e44ce4aad7209ff7b23ac571b&format=json&filters%5Bdistrict_name%5D=";
 
 const defaultFormFields = {
 	phone: "+91 ",
 	username: "",
-	aadharNo: "",
+	email: "",
 	password: "",
 	otp: "",
 };
-const options = [
-	{ id: 232322, name: "svmit", domain: "org.abc" },
-	{ id: 38997, name: "polytechnic", domain: "in.svimt" },
-];
 
 const SignUpForm = () => {
 	useEffect(() => {
@@ -30,11 +27,11 @@ const SignUpForm = () => {
 	const [expandForm, setExpandForm] = useState(false);
 	const [buttonDisabled, setButtonDisabled] = useState(false);
 	const [district, setDistrictName] = useState("");
-	const { phone, otp, username, aadharNo, password } = formFields;
+	const { phone, otp, username, email, password } = formFields;
 
 	const [ClgOptions, setClgOptions] = useState([]);
 	useEffect(() => {
-		if (!district || district.length < 4) return;
+		if (district.length < 5) return;
 		let query = district.trim().toLowerCase();
 		query = query.charAt(0).toUpperCase() + query.slice(1);
 		async function fetchClgOptions() {
@@ -73,18 +70,26 @@ const SignUpForm = () => {
 
 		setButtonDisabled(true);
 		try {
-			await signUpUser(phone);
+			await signUpUser(phone, email);
 			setExpandForm(true);
 		} catch (e) {
 			if (e.code) alert("Error in signing up user: " + e.code);
-			console.log(e.message);
+			else alert(e.message);
 		}
 		setButtonDisabled(false);
 	};
 
-	const verifyOtp = (e) => {
+	const verifyOtp = async (e) => {
 		e.preventDefault();
-		verifyUserOtp(otp);
+		setButtonDisabled(true);
+		try {
+			await verifyUserOtp(formFields);
+		} catch (e) {
+			if (e.code === "auth/provider-already-linked") alert("User Already Exists with given Phone numeber");
+			else if (e.code) alert("Error in verifying Otp/Creating user: " + e.code);
+			console.log(e.message);
+		}
+		setButtonDisabled(false);
 	};
 
 	const goBackToResubmit = () => {
@@ -93,7 +98,7 @@ const SignUpForm = () => {
 
 	return (
 		<div className="sign-up-container">
-			<img className="pass-logo" src="./assets/pass.jpg" alt="Logo of bus pass" />
+			<img className="pass-logo" src="./pass.jpg" alt="Logo of bus pass" />
 			<h2>Welcome to E Bus-Pass</h2>
 			{expandForm ? (
 				<>
@@ -112,7 +117,7 @@ const SignUpForm = () => {
 								placeholder: "Enter OTP",
 							}}
 						/>
-						<Button children="Verify Otp" buttonType="button-dark" type="submit" />
+						<Button children="Verify Otp" buttonType="button-dark" type="submit" disabled={buttonDisabled} />
 						<div>
 							<span>Wrong Number ?</span>
 							<Link className="sign-link" to="/" onClick={goBackToResubmit}>
@@ -153,6 +158,16 @@ const SignUpForm = () => {
 							type: "tel",
 							minLength: 12,
 							placeholder: "+91...",
+							required: true,
+						}}
+					/>
+					<FormInput
+						label="Enter Email"
+						inputOptions={{
+							onChange: handleChange,
+							name: "email",
+							value: email,
+							type: "email",
 							required: true,
 						}}
 					/>

@@ -3,12 +3,10 @@ import {
 	getAuth,
 	RecaptchaVerifier,
 	signInWithPhoneNumber,
-	signInWithRedirect,
-	signInWithPopup,
-	GoogleAuthProvider,
-	createUserWithEmailAndPassword,
 	signInWithEmailAndPassword,
-	sendEmailVerification,
+	EmailAuthProvider,
+	linkWithCredential,
+	fetchSignInMethodsForEmail,
 } from "firebase/auth";
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
 
@@ -26,41 +24,42 @@ const firebaseApp = initializeApp(firebaseConfig);
 
 const auth = getAuth();
 
-export const verifyUserOtp = async (otp) => {
-	try {
-		// const {user}
-		const result = await window.confirmationResult.confirm(otp);
-		console.log(result.user);
-		alert("Signing Up Successfully done");
-	} catch (e) {
-		if (e.code) alert("Error in verifying Otp: " + e.code);
-	}
+export const verifyUserOtp = async (userInfo) => {
+	const { email, password, otp, ...additionalInfo } = userInfo;
+	if (!email || !password || !otp) throw new Error("Please provide necessary fields");
+
+	const { user } = await window.confirmationResult.confirm(otp);
+
+	// Link Email/Phone
+	const credential = EmailAuthProvider.credential(email, password);
+	await linkWithCredential(user, credential);
+	// Save user Info
+	await createUserFromAuth(user, email, additionalInfo);
+	alert("Signing Up Successfully done");
 };
 
-export const signUpUser = async (phoneNumber) => {
+export const signUpUser = async (phoneNumber, email) => {
 	let appVerifier = window.recaptchaVerifier;
-	window.confirmationResult = await signInWithPhoneNumber(
-		auth,
-		phoneNumber,
-		appVerifier,
-	);
+
+	// TODO: Verify email or use signInWithPopup
+	const emailSignIn = await fetchSignInMethodsForEmail(auth, email);
+	if (emailSignIn && emailSignIn.length > 0) throw new Error("Email already Exists!, please Sign-In");
+
+	window.confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
 };
 
 export const renderCaptcha = () => {
 	window.recaptchaVerifier = new RecaptchaVerifier(
 		"recaptcha-container",
 		{
-			size: "invisible"
+			size: "invisible",
 		},
 		auth
 	);
 };
 
-export const signInWithGooglePopup = () => signInWithPopup(auth, provider);
-export const signInWithGoogleRedirect = () =>
-	signInWithRedirect(auth, provider);
-export const db = getFirestore();
-export const createUserFromAuth = async (userAuth, additionalInfo = {}) => {
+const db = getFirestore();
+export const createUserFromAuth = async (userAuth, email, additionalInfo = {}) => {
 	if (!userAuth) return;
 
 	const userDocRef = doc(db, "users", userAuth.uid);
@@ -68,21 +67,24 @@ export const createUserFromAuth = async (userAuth, additionalInfo = {}) => {
 
 	if (!userSnapshot.exists()) {
 		try {
-			const { displayName, email } = userAuth;
 			const createdAt = new Date();
 
 			await setDoc(userDocRef, {
-				displayName,
 				email,
 				createdAt,
 				...additionalInfo,
 			});
 		} catch (e) {
-			console.log("There is some err with user setDoc err: " + e);
+			console.log("There is some err with user setDoc: " + e);
 		}
 	}
 
 	return userDocRef;
 };
-export const createUserFromEmailFromAuth = async (email, password) => {};
-export const signInUserFromEmailFromAuth = async (email, password) => {};
+
+export const signInUserFromEmailFromAuth = async (email, password) => {
+	if (!email || !password) return;
+	const response = await signInWithEmailAndPassword(auth, email, password);
+	alert("User is Logged in!");
+	return response;
+};
