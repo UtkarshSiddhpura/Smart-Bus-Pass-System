@@ -7,6 +7,7 @@ import {
 	EmailAuthProvider,
 	linkWithCredential,
 	fetchSignInMethodsForEmail,
+	onAuthStateChanged,
 } from "firebase/auth";
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
 
@@ -88,3 +89,5 @@ export const signInUserFromEmailFromAuth = async (email, password) => {
 	alert("User is Logged in!");
 	return response;
 };
+
+export const onAuthStateChangedListener = (callback) => onAuthStateChanged(auth, callback);
